@@ -23,22 +23,33 @@ class Player {
     constructor({ position, velocity }) {
         this.position = position
         this.velocity = velocity
+        this.speed = 2
         this.radius = 15
+        this.radians = 0.75
+        this.openRate = 0.06
+        this.rotation = 0
     }
 
     draw() {
+        context.save()
+        context.translate(this.position.x, this.position.y)
+        context.rotate(this.rotation)
+        context.translate(-this.position.x, -this.position.y)
         context.beginPath()
-        context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+        context.arc(this.position.x, this.position.y, this.radius, this.radians, Math.PI * 2 - this.radians)
         context.fillStyle = 'yellow'
+        context.lineTo(this.position.x, this.position.y)
         context.fill()
         context.closePath()
+        context.restore()
     }
 
     update() {
         this.draw()
         this.position.x += this.velocity.x
-
         this.position.y += this.velocity.y
+        if (this.radians < 0 || this.radians > 0.75) this.openRate = -this.openRate
+        this.radians += this.openRate
     }
 }
 
@@ -51,12 +62,13 @@ class Ghost {
         this.previousCollisions = []
         this.speed = speed
         this.previousPath = ''
+        this.scared = false
     }
 
     draw() {
         context.beginPath()
         context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
-        context.fillStyle = this.color
+        context.fillStyle = this.scared ? 'blue' : this.color
         context.fill()
         context.closePath()
     }
@@ -84,6 +96,21 @@ class Pallet {
     }
 }
 
+class PowerUp {
+    constructor({ position }) {
+        this.position = position
+        this.radius = 10
+    }
+
+    draw() {
+        context.beginPath()
+        context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+        context.fillStyle = 'white'
+        context.fill()
+        context.closePath()
+    }
+}
+
 const map = [
     ['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
     ['|', '.', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
@@ -96,7 +123,7 @@ const map = [
     ['|', '.', '[', ']', '.', '.', '.', '[', ']', '.', '|'],
     ['|', '.', '.', '.', '.', '^', '.', '.', '.', '.', '|'],
     ['|', '.', 'b', '.', '[', '5', ']', '.', 'b', '.', '|'],
-    ['|', '.', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
+    ['|', '.', '.', '.', '.', '.', '.', '.', '.', 'p', '|'],
     ['4', '-', '-', '-', '-', '-', '-', '-', '-', '-', '3']
 ]
 
@@ -108,8 +135,9 @@ function createImage(src) {
 
 const boundries = []
 const pallets = []
+const powerUp = []
 const player = new Player({ position: { x: Boundary.WIDTH + Boundary.WIDTH / 2, y: Boundary.HEIGHT + Boundary.HEIGHT / 2 }, velocity: { x: 0, y: 0 } })
-const ghosts = [new Ghost({ position: { x: Boundary.WIDTH * 6 + Boundary.WIDTH / 2, y: Boundary.HEIGHT + Boundary.HEIGHT / 2 }, velocity: { x: 5, y: 0 } })]
+const ghosts = [new Ghost({ position: { x: Boundary.WIDTH * 6 + Boundary.WIDTH / 2, y: Boundary.HEIGHT + Boundary.HEIGHT / 2 }, velocity: { x: 2, y: 0 } }), new Ghost({ position: { x: Boundary.WIDTH * 6 + Boundary.WIDTH / 2, y: Boundary.HEIGHT * 5 + Boundary.HEIGHT / 2 }, velocity: { x: 2, y: 0 }, color: 'gray' })]
 
 map.forEach((row, y) => {
     row.map((symbol, x) => {
@@ -165,6 +193,9 @@ map.forEach((row, y) => {
             case '.':
                 pallets.push(new Pallet({ position: { x: Boundary.WIDTH * x + Boundary.WIDTH / 2, y: Boundary.HEIGHT * y + Boundary.HEIGHT / 2 } }))
                 break
+            case 'p':
+                powerUp.push(new PowerUp({ position: { x: Boundary.WIDTH * x + Boundary.WIDTH / 2, y: Boundary.HEIGHT * y + Boundary.HEIGHT / 2 } }))
+                break
         }
     })
 })
@@ -189,57 +220,72 @@ let score = 0
 const scoreElement = document.getElementById('score')
 
 
-const collisionDetection = (circle, rectangle) => (circle.position.y - circle.radius + circle.velocity.y <=
-    rectangle.position.y + rectangle.height &&
-    circle.position.x + circle.radius + circle.velocity.x >=
-    rectangle.position.x &&
-    circle.position.y + circle.radius + circle.velocity.y >=
-    rectangle.position.y &&
-    circle.position.x - circle.radius + circle.velocity.x <=
-    rectangle.position.x + rectangle.width)
+const collisionDetection = (circle, rectangle) => {
+    const padding = Boundary.WIDTH / 2 - circle.radius - 1
+    return ((circle.position.y - circle.radius + circle.velocity.y <= rectangle.position.y + rectangle.height + padding) &&
+        (circle.position.x + circle.radius + circle.velocity.x >= rectangle.position.x - padding) &&
+        (circle.position.y + circle.radius + circle.velocity.y >= rectangle.position.y - padding) &&
+        (circle.position.x - circle.radius + circle.velocity.x <= rectangle.position.x + rectangle.width + padding))
+}
 
-
+let animationID
 function animationLoop() {
 
-    window.requestAnimationFrame(animationLoop)
+    animationID = window.requestAnimationFrame(animationLoop)
     context.clearRect(0, 0, window.innerWidth, window.innerHeight)
 
     // handle movement
     if (keys.w.pressed && lastKey === 'w') {
         for (let i = 0; i < boundries.length; i++) {
-            if (collisionDetection({ ...player, velocity: { x: 0, y: -5 } }, boundries[i])) {
+            if (collisionDetection({ ...player, velocity: { x: 0, y: -1 * player.speed } }, boundries[i])) {
                 player.velocity.y = 0
                 break
-            } else
-                player.velocity.y = -5
+            } else {
+                player.velocity.y = -1 * player.speed
+            }
         }
     }
     else if (keys.s.pressed && lastKey === 's') {
         for (let i = 0; i < boundries.length; i++) {
-            if (collisionDetection({ ...player, velocity: { x: 0, y: 5 } }, boundries[i])) {
+            if (collisionDetection({ ...player, velocity: { x: 0, y: 1 * player.speed } }, boundries[i])) {
                 player.velocity.y = 0
                 break
-            } else
-                player.velocity.y = 5
+            } else {
+                player.velocity.y = 1 * player.speed
+            }
         }
     }
     else if (keys.a.pressed && lastKey === 'a') {
         for (let i = 0; i < boundries.length; i++) {
-            if (collisionDetection({ ...player, velocity: { x: -5, y: 0 } }, boundries[i])) {
+            if (collisionDetection({ ...player, velocity: { x: -1 * player.speed, y: 0 } }, boundries[i])) {
                 player.velocity.x = 0
                 break
-            } else
-                player.velocity.x = -5
+            } else {
+                player.velocity.x = -1 * player.speed
+            }
         }
     }
     else if (keys.d.pressed && lastKey === 'd') {
         for (let i = 0; i < boundries.length; i++) {
-            if (collisionDetection({ ...player, velocity: { x: 5, y: 0 } }, boundries[i])) {
+            if (collisionDetection({ ...player, velocity: { x: 1 * player.speed, y: 0 } }, boundries[i])) {
                 player.velocity.x = 0
                 break
-            } else
-                player.velocity.x = 5
+            } else {
+                player.velocity.x = 1 * player.speed
+            }
         }
+    }
+
+    // rotate pacman
+    if (player.velocity.x >= 0) {
+        player.rotation = 0
+    } else if (player.velocity.x < 0) {
+        player.rotation = Math.PI
+    }
+    if (player.velocity.y > 0) {
+        player.rotation = Math.PI / 2
+    } else if (player.velocity.y < 0) {
+        player.rotation = 3 * Math.PI / 2
     }
 
     // draw boundaries
@@ -256,7 +302,7 @@ function animationLoop() {
     player.update()
 
     // draw pallets
-    for (let index = pallets.length - 1; index > 0; index--) {
+    for (let index = pallets.length - 1; index >= 0; index--) {
         const pallet = pallets[index];
         pallet.draw()
 
@@ -267,19 +313,59 @@ function animationLoop() {
         }
     }
 
+    // draw powerup
+    for (let index = powerUp.length - 1; index >= 0; index--) {
+        const power = powerUp[index];
+        power.draw()
+
+        if (Math.hypot(power.position.x - player.position.x, power.position.y - player.position.y) < power.radius + player.radius) {
+            powerUp.splice(index, 1)
+            ghosts.forEach(ghost => {
+                ghost.scared = true
+
+                setTimeout(() => { ghost.scared = false }, 3000)
+            })
+        }
+    }
+
+    // eat ghost or die
+    for (let index = ghosts.length - 1; index >= 0; index--) {
+        const ghost = ghosts[index]
+        if (Math.hypot(ghost.position.x - player.position.x, ghost.position.y - player.position.y) < ghost.radius + player.radius) {
+            if (ghost.scared) {
+                ghosts.splice(index, 1)
+            }
+            else {
+                cancelAnimationFrame(animationID)
+                const para = document.createElement('h1')
+                para.innerText = 'You lost'
+                document.body.appendChild(para)
+            }
+        }
+    }
+
+    // win
+    if (pallets.length == 0 || ghosts.length == 0) {
+        cancelAnimationFrame(animationID)
+        const para = document.createElement('h1')
+        para.innerText = 'You won'
+        document.body.appendChild(para)
+    }
+
     // draw ghost
     ghosts.forEach(ghost => {
         ghost.update()
+
         const collisions = []
 
         boundries.forEach(boundary => {
-            if (!collisions.includes('left') && collisionDetection({ ...ghost, velocity: { x: -5, y: 0 } }, boundary))
+            if (!collisions.includes('left') && collisionDetection({ ...ghost, velocity: { x: -1 * ghost.speed, y: 0 } }, boundary))
                 collisions.push('left')
-            if (!collisions.includes('right') && collisionDetection({ ...ghost, velocity: { x: 5, y: 0 } }, boundary))
+            if (!collisions.includes('right') && collisionDetection({ ...ghost, velocity: { x: 1 * ghost.speed, y: 0 } }, boundary))
                 collisions.push('right')
-            if (!collisions.includes('down') && collisionDetection({ ...ghost, velocity: { x: 0, y: 5 } }, boundary))
+            if (!collisions.includes('down') && collisionDetection({ ...ghost, velocity: { x: 0, y: 1 * ghost.speed } }, boundary))
                 collisions.push('down')
-            if (!collisions.includes('up') && collisionDetection({ ...ghost, velocity: { x: 0, y: -5 } }, boundary))
+            if (!collisions.includes('up') && collisionDetection({ ...ghost, velocity: { x: 0, y: -1 * ghost.speed } }, boundary))
                 collisions.push('up')
         })
 
@@ -353,16 +439,16 @@ function animationLoop() {
             ghost.velocity.y = 0
             switch (direction) {
                 case 'up':
-                    ghost.velocity.y = -5
+                    ghost.velocity.y = -1 * ghost.speed
                     break
                 case 'down':
-                    ghost.velocity.y = 5
+                    ghost.velocity.y = 1 * ghost.speed
                     break
                 case 'left':
-                    ghost.velocity.x = -5
+                    ghost.velocity.x = -1 * ghost.speed
                     break
                 case 'right':
-                    ghost.velocity.x = 5
+                    ghost.velocity.x = 1 * ghost.speed
                     break
             }
 
