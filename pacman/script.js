@@ -3,6 +3,8 @@ const context = canvas.getContext('2d')
 
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
+var GAMEFRAME = 0
+var STAGGEREDFRAME = 20
 
 class Boundary {
     static WIDTH = 40
@@ -68,55 +70,43 @@ class Player {
 }
 
 class Ghost {
-    constructor({ position, velocity, color = 'red', speed = 1 }) {
+    constructor({ position, velocity, image = ghostSprite(), speed = 1, variant = 3 }) {
         this.position = position
         this.velocity = velocity
-        this.radius = 15
-        this.color = color
         this.previousCollisions = []
-        this.speed = speed
         this.previousPath = ''
         this.scared = false
-        this.radians = 0.75
-        this.openRate = 0.06
+        this.speed = speed
+        this.image = image
+        this.radius = 16
+        this.spriteSize = 16
         this.rotation = 0
-    }
+        this.variant = variant
 
-    draw() {
-        context.save()
-        context.translate(this.position.x, this.position.y)
-        context.rotate(this.rotation)
-        context.translate(-this.position.x, -this.position.y)
-        context.beginPath()
-        context.arc(this.position.x, this.position.y, this.radius, this.radians, Math.PI * 2 - this.radians)
-        context.fillStyle = this.scared ? 'blue' : this.color
-        context.lineTo(this.position.x, this.position.y)
-        context.fill()
-        context.closePath()
-        context.restore()
     }
 
     update() {
-        this.draw()
+        let position = Math.floor(GAMEFRAME / STAGGEREDFRAME) % 2
         this.updateRotation()
+        context.drawImage(this.image, (position + this.rotation) * this.spriteSize, this.variant * this.spriteSize, this.spriteSize, this.spriteSize, this.position.x - this.spriteSize, this.position.y - this.spriteSize, 35, 35)
         this.position.x += this.velocity.x
         this.position.y += this.velocity.y
-        if (this.radians < 0 || this.radians > 0.75) this.openRate = -this.openRate
-        this.radians += this.openRate
+
     }
 
     updateRotation() {
         if (this.velocity.x > 0) {
             this.rotation = 0
         } else if (this.velocity.x < 0) {
-            this.rotation = Math.PI
+            this.rotation = 2
         }
         if (this.velocity.y > 0) {
-            this.rotation = Math.PI / 2
+            this.rotation = 6
         } else if (this.velocity.y < 0) {
-            this.rotation = 3 * Math.PI / 2
+            this.rotation = 4
         }
     }
+
 }
 
 class Pallet {
@@ -168,6 +158,14 @@ const map = [
 function createImage(src) {
     const image = new Image()
     image.src = src
+    return image
+}
+
+function ghostSprite() {
+    const image = new Image()
+    image.src = '/ghosts/ghost-sprite.png'
+    const sprite_width = 16
+    const sprite_height = 16
     return image
 }
 
@@ -271,6 +269,7 @@ function animationLoop() {
 
     animationID = window.requestAnimationFrame(animationLoop)
     context.clearRect(0, 0, window.innerWidth, window.innerHeight)
+    GAMEFRAME += 1
 
     // handle movement
     if (keys.w.pressed && lastKey === 'w') {
@@ -356,20 +355,20 @@ function animationLoop() {
     }
 
     // eat ghost or die
-    for (let index = ghosts.length - 1; index >= 0; index--) {
-        const ghost = ghosts[index]
-        if (Math.hypot(ghost.position.x - player.position.x, ghost.position.y - player.position.y) < ghost.radius + player.radius) {
-            if (ghost.scared) {
-                ghosts.splice(index, 1)
-            }
-            else {
-                cancelAnimationFrame(animationID)
-                const para = document.createElement('h1')
-                para.innerText = 'You lost'
-                document.body.appendChild(para)
-            }
-        }
-    }
+    // for (let index = ghosts.length - 1; index >= 0; index--) {
+    //     const ghost = ghosts[index]
+    //     if (Math.hypot(ghost.position.x - player.position.x, ghost.position.y - player.position.y) < ghost.radius + player.radius) {
+    //         if (ghost.scared) {
+    //             ghosts.splice(index, 1)
+    //         }
+    //         else {
+    //             cancelAnimationFrame(animationID)
+    //             const para = document.createElement('h1')
+    //             para.innerText = 'You lost'
+    //             document.body.appendChild(para)
+    //         }
+    //     }
+    // }
 
     // win
     if (pallets.length == 0 || ghosts.length == 0) {
