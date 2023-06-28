@@ -22,55 +22,42 @@ class Boundary {
 }
 
 class Player {
-    constructor({ position, velocity }) {
+    constructor({ position, velocity, image = spriteFuntion('pacman') }) {
         this.position = position
         this.velocity = velocity
         this.speed = 2
-        this.radius = 15
-        this.radians = 0.75
-        this.openRate = 0.06
+        this.radius = 16
         this.rotation = 0
-    }
-
-    draw() {
-        context.save()
-        context.translate(this.position.x, this.position.y)
-        context.rotate(this.rotation)
-        context.translate(-this.position.x, -this.position.y)
-        context.beginPath()
-        context.arc(this.position.x, this.position.y, this.radius, this.radians, Math.PI * 2 - this.radians)
-        context.fillStyle = 'yellow'
-        context.lineTo(this.position.x, this.position.y)
-        context.fill()
-        context.closePath()
-        context.restore()
+        this.spriteSize = 16
+        this.image = image
     }
 
     update() {
-        this.draw()
+
+        let position = Math.floor(GAMEFRAME / (STAGGEREDFRAME -2)) % 3
         this.updateRotation()
+        context.drawImage(this.image, position * this.spriteSize, this.rotation * this.spriteSize, this.spriteSize, this.spriteSize, this.position.x - this.spriteSize, this.position.y - this.spriteSize, 35, 35)
         this.position.x += this.velocity.x
         this.position.y += this.velocity.y
-        if (this.radians < 0 || this.radians > 0.75) this.openRate = -this.openRate
-        this.radians += this.openRate
+
     }
 
     updateRotation() {
         if (this.velocity.x > 0) {
             this.rotation = 0
         } else if (this.velocity.x < 0) {
-            this.rotation = Math.PI
+            this.rotation = 1
         }
         if (this.velocity.y > 0) {
-            this.rotation = Math.PI / 2
+            this.rotation = 3
         } else if (this.velocity.y < 0) {
-            this.rotation = 3 * Math.PI / 2
+            this.rotation = 2
         }
     }
 }
 
 class Ghost {
-    constructor({ position, velocity, image = ghostSprite(), speed = 1, variant = 0 }) {
+    constructor({ position, velocity, image = spriteFuntion('ghost-sprite'), speed = 1, variant = 1 }) {
         this.position = position
         this.velocity = velocity
         this.previousCollisions = []
@@ -82,13 +69,14 @@ class Ghost {
         this.spriteSize = 16
         this.rotation = 0
         this.variant = variant
-
+        
+    
     }
 
     update() {
         let position = Math.floor(GAMEFRAME / STAGGEREDFRAME) % 2
         this.updateRotation()
-        context.drawImage(this.image, (position + this.rotation) * this.spriteSize, this.variant * this.spriteSize, this.spriteSize, this.spriteSize, this.position.x - this.spriteSize, this.position.y - this.spriteSize, 35, 35)
+        context.drawImage(this.image, (position + (this.rotation * (this.scared ? 0 : 1)) + (this.scared ? 10 : 0)) * this.spriteSize, this.variant * this.spriteSize * (this.scared ? 0 : 1), this.spriteSize, this.spriteSize, this.position.x - this.spriteSize, this.position.y - this.spriteSize, 35, 35)
         this.position.x += this.velocity.x
         this.position.y += this.velocity.y
 
@@ -141,7 +129,7 @@ class PowerUp {
 
 const map = [
     ['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
-    ['|', '.', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
+    ['|', ' ', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
     ['|', '.', 'b', '.', '[', '7', ']', '.', 'b', '.', '|'],
     ['|', '.', '.', '.', '.', '_', '.', '.', '.', '.', '|'],
     ['|', '.', '[', ']', '.', '.', '.', '[', ']', '.', '|'],
@@ -161,11 +149,9 @@ function createImage(src) {
     return image
 }
 
-function ghostSprite() {
+function spriteFuntion(sprite) {
     const image = new Image()
-    image.src = '/moving-sprites/ghost-sprite.png'
-    const sprite_width = 16
-    const sprite_height = 16
+    image.src = `/moving-sprites/${sprite}.png`
     return image
 }
 
