@@ -70,7 +70,7 @@ class Player {
 }
 
 class Ghost {
-    constructor({ position, velocity, image = ghostSprite(), speed = 1, variant = 3 }) {
+    constructor({ position, velocity, image = ghostSprite(), speed = 1, variant = 0 }) {
         this.position = position
         this.velocity = velocity
         this.previousCollisions = []
@@ -163,7 +163,7 @@ function createImage(src) {
 
 function ghostSprite() {
     const image = new Image()
-    image.src = '/ghosts/ghost-sprite.png'
+    image.src = '/moving-sprites/ghost-sprite.png'
     const sprite_width = 16
     const sprite_height = 16
     return image
