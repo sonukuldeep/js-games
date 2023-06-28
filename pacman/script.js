@@ -46,10 +46,24 @@ class Player {
 
     update() {
         this.draw()
+        this.updateRotation()
         this.position.x += this.velocity.x
         this.position.y += this.velocity.y
         if (this.radians < 0 || this.radians > 0.75) this.openRate = -this.openRate
         this.radians += this.openRate
+    }
+
+    updateRotation() {
+        if (this.velocity.x > 0) {
+            this.rotation = 0
+        } else if (this.velocity.x < 0) {
+            this.rotation = Math.PI
+        }
+        if (this.velocity.y > 0) {
+            this.rotation = Math.PI / 2
+        } else if (this.velocity.y < 0) {
+            this.rotation = 3 * Math.PI / 2
+        }
     }
 }
 
@@ -63,21 +77,45 @@ class Ghost {
         this.speed = speed
         this.previousPath = ''
         this.scared = false
+        this.radians = 0.75
+        this.openRate = 0.06
+        this.rotation = 0
     }
 
     draw() {
+        context.save()
+        context.translate(this.position.x, this.position.y)
+        context.rotate(this.rotation)
+        context.translate(-this.position.x, -this.position.y)
         context.beginPath()
-        context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+        context.arc(this.position.x, this.position.y, this.radius, this.radians, Math.PI * 2 - this.radians)
         context.fillStyle = this.scared ? 'blue' : this.color
+        context.lineTo(this.position.x, this.position.y)
         context.fill()
         context.closePath()
+        context.restore()
     }
 
     update() {
         this.draw()
+        this.updateRotation()
         this.position.x += this.velocity.x
-
         this.position.y += this.velocity.y
+        if (this.radians < 0 || this.radians > 0.75) this.openRate = -this.openRate
+        this.radians += this.openRate
+    }
+
+    updateRotation() {
+        if (this.velocity.x > 0) {
+            this.rotation = 0
+        } else if (this.velocity.x < 0) {
+            this.rotation = Math.PI
+        }
+        if (this.velocity.y > 0) {
+            this.rotation = Math.PI / 2
+        } else if (this.velocity.y < 0) {
+            this.rotation = 3 * Math.PI / 2
+        }
     }
 }
 
@@ -276,17 +314,6 @@ function animationLoop() {
         }
     }
 
-    // rotate pacman
-    if (player.velocity.x >= 0) {
-        player.rotation = 0
-    } else if (player.velocity.x < 0) {
-        player.rotation = Math.PI
-    }
-    if (player.velocity.y > 0) {
-        player.rotation = Math.PI / 2
-    } else if (player.velocity.y < 0) {
-        player.rotation = 3 * Math.PI / 2
-    }
 
     // draw boundaries
     boundries.forEach(boundary => {
@@ -346,10 +373,13 @@ function animationLoop() {
 
     // win
     if (pallets.length == 0 || ghosts.length == 0) {
-        cancelAnimationFrame(animationID)
-        const para = document.createElement('h1')
-        para.innerText = 'You won'
-        document.body.appendChild(para)
+        setTimeout(() => {
+
+            cancelAnimationFrame(animationID)
+            const para = document.createElement('h1')
+            para.innerText = 'You won'
+            document.body.appendChild(para)
+        }, 100)
     }
 
     // draw ghost
@@ -369,92 +399,103 @@ function animationLoop() {
                 collisions.push('up')
         })
 
-        // ghost.velocity.x = 0
-        // ghost.velocity.y = 0
-
-        // if (JSON.stringify(collisions) !== JSON.stringify(ghost.previousCollisions)) {
-        //     const paths = ['right', 'left', 'up', 'down'].filter(path => !collisions.includes(path))
-        //     const randomIndex = Math.floor(Math.random() * paths.length)
-        //     ghost.previousCollisions = [...collisions]
-        //     const smartPath = []
-        //     if (paths.includes(ghost.previousPath)) {
-        //         smartPath.push(ghost.previousPath)
-        //     }
-        //     smartPath.push(paths[randomIndex])
-        //     const randomIndexAgain = Math.floor(Math.random() * smartPath.length)
-
-
-        //     switch (smartPath[randomIndexAgain]) {
-        //         case 'down':
-        //             ghost.velocity.y = 1 * ghost.speed
-        //             ghost.previousPath = 'down'
-        //             break
-        //         case 'up':
-        //             ghost.velocity.y = -1 * ghost.speed
-        //             ghost.previousPath = 'up'
-        //             break
-        //         case 'right':
-        //             ghost.velocity.x = 1 * ghost.speed
-        //             ghost.previousPath = 'right'
-        //             break
-        //         case 'left':
-        //             ghost.velocity.x = -1 * ghost.speed
-        //             ghost.previousPath = 'left'
-        //             break
-        //     }
-
-        // } else {
-        //     switch (ghost.previousPath) {
-        //         case 'down':
-        //             ghost.velocity.y = 1 * ghost.speed
-        //             break
-        //         case 'up':
-        //             ghost.velocity.y = -1 * ghost.speed
-        //             break
-        //         case 'right':
-        //             ghost.velocity.x = 1 * ghost.speed
-        //             break
-        //         case 'left':
-        //             ghost.velocity.x = -1 * ghost.speed
-        //             break
-        //     }
-        // }
-
-
-
-        if (collisions.length > ghost.previousCollisions.length)
-            ghost.previousCollisions = [...collisions]
+        // ghost movement 1
+        ghost.velocity.x = 0
+        ghost.velocity.y = 0
 
         if (JSON.stringify(collisions) !== JSON.stringify(ghost.previousCollisions)) {
-            if (ghost.velocity.x > 0 && !ghost.previousCollisions.includes('right')) ghost.previousCollisions.push('right')
-            else if (ghost.velocity.x < 0 && !ghost.previousCollisions.includes('left')) ghost.previousCollisions.push('left')
-            else if (ghost.velocity.y > 0 && !ghost.previousCollisions.includes('down')) ghost.previousCollisions.push('down')
-            else if (ghost.velocity.y < 0 && !ghost.previousCollisions.includes('up')) ghost.previousCollisions.push('up')
 
-            const pathways = ghost.previousCollisions.filter(path => !collisions.includes(path))
-            const randomIndex = Math.floor(Math.random() * pathways.length)
-            const direction = pathways[randomIndex]
+            let paths = ['right', 'left', 'up', 'down'].filter(path => !collisions.includes(path))
 
-            ghost.velocity.x = 0
-            ghost.velocity.y = 0
-            switch (direction) {
-                case 'up':
-                    ghost.velocity.y = -1 * ghost.speed
+            switch (ghost.previousPath) {
+                case 'down':
+                    paths = paths.filter(path => path !== 'up')
                     break
+                case 'up':
+                    paths = paths.filter(path => path !== 'down')
+                    break
+                case 'right':
+                    paths = paths.filter(path => path !== 'left')
+                    break
+                case 'left':
+                    paths = paths.filter(path => path !== 'right')
+                    break
+            }
+
+            const randomIndex = Math.floor(Math.random() * paths.length)
+            ghost.previousCollisions = [...collisions]
+
+            switch (paths[randomIndex]) {
                 case 'down':
                     ghost.velocity.y = 1 * ghost.speed
+                    ghost.previousPath = 'down'
+                    break
+                case 'up':
+                    ghost.velocity.y = -1 * ghost.speed
+                    ghost.previousPath = 'up'
+                    break
+                case 'right':
+                    ghost.velocity.x = 1 * ghost.speed
+                    ghost.previousPath = 'right'
                     break
                 case 'left':
                     ghost.velocity.x = -1 * ghost.speed
+                    ghost.previousPath = 'left'
+                    break
+            }
+
+        } else {
+            switch (ghost.previousPath) {
+                case 'down':
+                    ghost.velocity.y = 1 * ghost.speed
+                    break
+                case 'up':
+                    ghost.velocity.y = -1 * ghost.speed
                     break
                 case 'right':
                     ghost.velocity.x = 1 * ghost.speed
                     break
+                case 'left':
+                    ghost.velocity.x = -1 * ghost.speed
+                    break
             }
-
-            ghost.previousCollisions = []
-
         }
+
+
+        // ghost movement 2 // second mechanics of ghost movement
+        // if (collisions.length > ghost.previousCollisions.length)
+        //     ghost.previousCollisions = [...collisions]
+
+        // if (JSON.stringify(collisions) !== JSON.stringify(ghost.previousCollisions)) {
+        //     if (ghost.velocity.x > 0 && !ghost.previousCollisions.includes('right')) ghost.previousCollisions.push('right')
+        //     else if (ghost.velocity.x < 0 && !ghost.previousCollisions.includes('left')) ghost.previousCollisions.push('left')
+        //     else if (ghost.velocity.y > 0 && !ghost.previousCollisions.includes('down')) ghost.previousCollisions.push('down')
+        //     else if (ghost.velocity.y < 0 && !ghost.previousCollisions.includes('up')) ghost.previousCollisions.push('up')
+
+        //     const pathways = ghost.previousCollisions.filter(path => !collisions.includes(path))
+        //     const randomIndex = Math.floor(Math.random() * pathways.length)
+        //     const direction = pathways[randomIndex]
+
+        //     ghost.velocity.x = 0
+        //     ghost.velocity.y = 0
+        //     switch (direction) {
+        //         case 'up':
+        //             ghost.velocity.y = -1 * ghost.speed
+        //             break
+        //         case 'down':
+        //             ghost.velocity.y = 1 * ghost.speed
+        //             break
+        //         case 'left':
+        //             ghost.velocity.x = -1 * ghost.speed
+        //             break
+        //         case 'right':
+        //             ghost.velocity.x = 1 * ghost.speed
+        //             break
+        //     }
+
+        //     ghost.previousCollisions = []
+
+        // }
 
     })
 
