@@ -278,26 +278,15 @@ const collisionDetection = (circle, rectangle) => {
 
 function GameMenu(headingText, btnText, run = () => { }, start = false) {
     if (start) {
-        const div = document.createElement('div')
-        div.setAttribute('id', 'startMenu')
-        const heading = document.createElement('h1')
-        heading.innerText = headingText
-        const btn = document.createElement('button')
-        btn.addEventListener('click', (e) => {
-            e.preventDefault()
-            animationLoop()
-            document.getElementById('startMenu').remove()
-            console.log('ran')
-        })
-        btn.innerText = btnText
-        div.appendChild(heading)
-        div.appendChild(btn)
-        document.body.appendChild(div)
+        const startMenu = document.getElementById('start-menu')
+        const startBtn = document.getElementById('start-btn')
+        startBtn.addEventListener('click', () => { startMenu.style.display = 'none'; animationLoop() })
         return
     }
 
     if (ENDGAME === 0) {
         const div = document.createElement('div')
+        div.setAttribute('id','pause-menu')
         const heading = document.createElement('h1')
         heading.innerText = headingText
         const btn = document.createElement('button')
@@ -432,7 +421,6 @@ function animationLoop() {
     // win
     if (pallets.length == 0) {
         setTimeout(() => {
-
             cancelAnimationFrame(animationID)
             GameMenu('You won', 'Menu')
         }, 100)
@@ -611,4 +599,8 @@ window.addEventListener('keyup', (e) => {
         default:
             console.log(e.key)
     }
+})
+
+document.getElementById('github-link').addEventListener('click',()=>{
+    window.open('https://github.com', '_blank')
 })
