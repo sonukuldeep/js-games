@@ -4,6 +4,7 @@ const context = canvas.getContext('2d')
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 var GAMEFRAME = 0
+var ENDGAME = 0
 var STAGGEREDFRAME = 20
 
 class Boundary {
@@ -30,11 +31,12 @@ class Player {
         this.rotation = 0
         this.spriteSize = 16
         this.image = image
+        this.dead = false
     }
 
     update() {
 
-        let position = Math.floor(GAMEFRAME / (STAGGEREDFRAME -2)) % 3
+        let position = Math.floor(GAMEFRAME / (STAGGEREDFRAME - 2)) % 3
         this.updateRotation()
         context.drawImage(this.image, position * this.spriteSize, this.rotation * this.spriteSize, this.spriteSize, this.spriteSize, this.position.x - this.spriteSize, this.position.y - this.spriteSize, 35, 35)
         this.position.x += this.velocity.x
@@ -54,6 +56,13 @@ class Player {
             this.rotation = 2
         }
     }
+
+    deadAnimation() {
+        if (ENDGAME >= 215) return
+        let position = Math.floor(ENDGAME / (STAGGEREDFRAME)) % 11
+        context.drawImage(this.image, (position + 3) * this.spriteSize, 0, this.spriteSize, this.spriteSize, this.position.x - this.spriteSize, this.position.y - this.spriteSize, 35, 35)
+        ENDGAME++
+    }
 }
 
 class Ghost {
@@ -69,8 +78,8 @@ class Ghost {
         this.spriteSize = 16
         this.rotation = 0
         this.variant = variant
-        
-    
+
+
     }
 
     update() {
@@ -127,6 +136,22 @@ class PowerUp {
     }
 }
 
+class ScoreBoard {
+    constructor() {
+        this.score = 0
+        this.best = '0'
+    }
+
+    onInit() {
+        const score = localStorage.getItem('score')
+        if (score === null)
+            this.best = '0'
+        else
+            this.best = score
+    }
+}
+
+
 const map = [
     ['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
     ['|', ' ', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
@@ -160,6 +185,8 @@ const pallets = []
 const powerUp = []
 const player = new Player({ position: { x: Boundary.WIDTH + Boundary.WIDTH / 2, y: Boundary.HEIGHT + Boundary.HEIGHT / 2 }, velocity: { x: 0, y: 0 } })
 const ghosts = [new Ghost({ position: { x: Boundary.WIDTH * 6 + Boundary.WIDTH / 2, y: Boundary.HEIGHT + Boundary.HEIGHT / 2 }, velocity: { x: 2, y: 0 } }), new Ghost({ position: { x: Boundary.WIDTH * 6 + Boundary.WIDTH / 2, y: Boundary.HEIGHT * 5 + Boundary.HEIGHT / 2 }, velocity: { x: 2, y: 0 }, color: 'gray' })]
+const playerScore = new ScoreBoard()
+playerScore.onInit()
 
 map.forEach((row, y) => {
     row.map((symbol, x) => {
@@ -238,7 +265,6 @@ const keys = {
 }
 
 let lastKey = ''
-let score = 0
 const scoreElement = document.getElementById('score')
 
 
@@ -250,6 +276,49 @@ const collisionDetection = (circle, rectangle) => {
         (circle.position.x - circle.radius + circle.velocity.x <= rectangle.position.x + rectangle.width + padding))
 }
 
+function GameMenu(headingText, btnText, run = () => { }, start = false) {
+    if (start) {
+        const div = document.createElement('div')
+        div.setAttribute('id', 'startMenu')
+        const heading = document.createElement('h1')
+        heading.innerText = headingText
+        const btn = document.createElement('button')
+        btn.addEventListener('click', (e) => {
+            e.preventDefault()
+            animationLoop()
+            document.getElementById('startMenu').remove()
+            console.log('ran')
+        })
+        btn.innerText = btnText
+        div.appendChild(heading)
+        div.appendChild(btn)
+        document.body.appendChild(div)
+        return
+    }
+
+    if (ENDGAME === 0) {
+        const div = document.createElement('div')
+        const heading = document.createElement('h1')
+        heading.innerText = headingText
+        const btn = document.createElement('button')
+        btn.addEventListener('click', () => window.location.reload())
+        btn.innerText = btnText
+        div.appendChild(heading)
+        div.appendChild(btn)
+        if (playerScore.score > parseInt(playerScore.best)) {
+            const para = document.createElement('p')
+            para.innerText = `Your new personal best: ${playerScore.score}`
+            div.appendChild(para)
+            localStorage.setItem('score', playerScore.score)
+        }
+        document.body.appendChild(div)
+        run()
+    }
+
+}
+
+
+//  Main Animation function
 let animationID
 function animationLoop() {
 
@@ -311,7 +380,10 @@ function animationLoop() {
     )
 
     // draw player
-    player.update()
+    if (!player.dead)
+        player.update()
+    else
+        player.deadAnimation()
 
     // draw pallets
     for (let index = pallets.length - 1; index >= 0; index--) {
@@ -320,8 +392,9 @@ function animationLoop() {
 
         if (Math.hypot(pallet.position.x - player.position.x, pallet.position.y - player.position.y) < pallet.radius + player.radius) {
             pallets.splice(index, 1)
-            score += 1
-            scoreElement.innerText = score
+            playerScore.score += 1
+            scoreElement.innerText = `Score: ${playerScore.score}`
+
         }
     }
 
@@ -340,30 +413,28 @@ function animationLoop() {
         }
     }
 
-    // eat ghost or die
-    // for (let index = ghosts.length - 1; index >= 0; index--) {
-    //     const ghost = ghosts[index]
-    //     if (Math.hypot(ghost.position.x - player.position.x, ghost.position.y - player.position.y) < ghost.radius + player.radius) {
-    //         if (ghost.scared) {
-    //             ghosts.splice(index, 1)
-    //         }
-    //         else {
-    //             cancelAnimationFrame(animationID)
-    //             const para = document.createElement('h1')
-    //             para.innerText = 'You lost'
-    //             document.body.appendChild(para)
-    //         }
-    //     }
-    // }
+    //eat ghost or die
+    for (let index = ghosts.length - 1; index >= 0; index--) {
+        const ghost = ghosts[index]
+        if (Math.hypot(ghost.position.x - player.position.x, ghost.position.y - player.position.y) < ghost.radius + player.radius) {
+            if (ghost.scared) {
+                ghosts.splice(index, 1)
+                playerScore.score += 50
+                scoreElement.innerText = `Score: ${playerScore.score}`
+            }
+            else {
+                player.dead = true
+                GameMenu('You lose', 'Menu', () => { setTimeout(() => { cancelAnimationFrame(animationID) }, 4000) })
+            }
+        }
+    }
 
     // win
-    if (pallets.length == 0 || ghosts.length == 0) {
+    if (pallets.length == 0) {
         setTimeout(() => {
 
             cancelAnimationFrame(animationID)
-            const para = document.createElement('h1')
-            para.innerText = 'You won'
-            document.body.appendChild(para)
+            GameMenu('You won', 'Menu')
         }, 100)
     }
 
@@ -486,7 +557,7 @@ function animationLoop() {
 
 }
 
-animationLoop()
+GameMenu('Pacman the Origin', 'Start', () => { }, true)
 
 
 
