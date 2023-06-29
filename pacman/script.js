@@ -6,6 +6,9 @@ canvas.height = window.innerHeight
 var GAMEFRAME = 0
 var ENDGAME = 0
 var STAGGEREDFRAME = 20
+var beat = true
+const deathBeat = new Audio('/sounds/pacman_death.wav')
+const intermission = new Audio('/sounds/pacman_intermission.wav')
 
 class Boundary {
     static WIDTH = 40
@@ -188,6 +191,7 @@ const ghosts = [new Ghost({ position: { x: Boundary.WIDTH * 6 + Boundary.WIDTH /
 const playerScore = new ScoreBoard()
 playerScore.onInit()
 
+
 map.forEach((row, y) => {
     row.map((symbol, x) => {
         switch (symbol) {
@@ -280,13 +284,17 @@ function GameMenu(headingText, btnText, run = () => { }, start = false) {
     if (start) {
         const startMenu = document.getElementById('start-menu')
         const startBtn = document.getElementById('start-btn')
-        startBtn.addEventListener('click', () => { startMenu.style.display = 'none'; animationLoop() })
+        startBtn.addEventListener('click', () => {
+            startMenu.style.display = 'none';
+            animationLoop()
+            soundEngine(1)
+        })
         return
     }
 
     if (ENDGAME === 0) {
         const div = document.createElement('div')
-        div.setAttribute('id','pause-menu')
+        div.setAttribute('id', 'pause-menu')
         const heading = document.createElement('h1')
         heading.innerText = headingText
         const btn = document.createElement('button')
@@ -302,9 +310,45 @@ function GameMenu(headingText, btnText, run = () => { }, start = false) {
         }
         document.body.appendChild(div)
         run()
+
     }
 
 }
+
+function soundEngine(mode = 1) {
+    if (!beat) {
+        intermission.pause()
+        deathBeat.pause()
+        return
+    }
+    switch (mode) {
+        case 1:
+            intermission.loop = true
+            intermission.play()
+            break
+        case 2:
+            intermission.pause()
+            deathBeat.play()
+            break
+        case 3:
+            intermission.pause()
+            deathBeat.pause()
+            break
+    }
+}
+
+document.getElementById('s1').addEventListener('click', (e) => {
+    e.preventDefault()
+    document.getElementById('s1').style.display = 'none'
+    document.getElementById('s2').style.display = 'block'
+    beat = false
+})
+document.getElementById('s2').addEventListener('click', (e) => {
+    e.preventDefault()
+    document.getElementById('s2').style.display = 'none'
+    document.getElementById('s1').style.display = 'block'
+    beat = true
+})
 
 
 //  Main Animation function
@@ -413,6 +457,7 @@ function animationLoop() {
             }
             else {
                 player.dead = true
+                soundEngine(2)
                 GameMenu('You lose', 'Menu', () => { setTimeout(() => { cancelAnimationFrame(animationID) }, 4000) })
             }
         }
@@ -420,6 +465,7 @@ function animationLoop() {
 
     // win
     if (pallets.length == 0) {
+        soundEngine(3)
         setTimeout(() => {
             cancelAnimationFrame(animationID)
             GameMenu('You won', 'Menu')
@@ -601,6 +647,6 @@ window.addEventListener('keyup', (e) => {
     }
 })
 
-document.getElementById('github-link').addEventListener('click',()=>{
+document.getElementById('github-link').addEventListener('click', () => {
     window.open('https://github.com', '_blank')
 })
