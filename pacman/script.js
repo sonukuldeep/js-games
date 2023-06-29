@@ -648,5 +648,5 @@ window.addEventListener('keyup', (e) => {
 })
 
 document.getElementById('github-link').addEventListener('click', () => {
-    window.open('https://github.com', '_blank')
+    window.open('https://github.com/sonukuldeep/js-games', '_blank')
 })
