@@ -1,46 +1,21 @@
+import { Move as MOVE } from './controls.js';
+import { collisionBlocks, collisionMechanics } from "./collision.js";
+
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
-import { collisions } from "./collisionArray.js";
 
 canvas.width = 1024
 canvas.height = 576
-const offsets = { x: -700, y: -620 }
+const OFFSETS = { x: -700, y: -620 }
+let FRAMERATE = 0
+const FRAMERATELIMIT = 20
 
 const mapSrc = '/assets/images/PelletTown.png'
 const playerSrcDown = '/assets/images/playerDown.png'
 const playerSrcLeft = '/assets/images/playerLeft.png'
 const playerSrcRight = '/assets/images/playerRight.png'
 const playerSrcUp = '/assets/images/playerUp.png'
-
-let FRAMERATE = 0
-const FRAMERATELIMIT = 20
-const boundaries = []
-
-class CollisionsMap {
-    static width = 12 * 4 // pixel size times zoom
-    static height = 12 * 4 // pixel size times zoom
-    constructor(position) {
-        this.position = { x: position.x, y: position.y }
-    }
-
-    // draw() {
-    //     ctx.fillStyle = 'red'
-    //     ctx.fillRect(this.position.x, this.position.y, 48, 48)
-    // }
-
-    updatePosition(x, y) {
-        this.position.x += x
-        this.position.y += y
-    }
-}
-
-collisions.forEach((row, i) => {
-    row.forEach((col, j) => {
-        if (col === 1025)
-            boundaries.push(new CollisionsMap({ x: j * CollisionsMap.width + offsets.x, y: i * CollisionsMap.height + offsets.y }))
-    })
-})
-
+const foreGround = '/assets/images/PelletTownForeground.png'
 
 class Sprite {
     constructor(position, src) {
@@ -54,102 +29,42 @@ class Sprite {
     }
 
     updatePosition() {
-        this.position.x += this.move.x
-        this.position.y += this.move.y
+        this.position.x += MOVE.x
+        this.position.y += MOVE.y
     }
 }
 
 class PlayerSprite extends Sprite {
-    static width = 48
-    static height = 68
     constructor(position, src) {
         super(position, src)
+        this.width = 48 // set according to charater sprite
+        this.height = 68 // set according to charater sprite
     }
 
 }
 
 // sprite objects
-const map = new Sprite(offsets, mapSrc)
+const map = new Sprite(OFFSETS, mapSrc)
+const foreGroundMap = new Sprite(OFFSETS, foreGround)
 const player = new PlayerSprite({ x: canvas.width / 2, y: canvas.height / 2 }, playerSrcDown)
 
-// handle movement 
-window.addEventListener('keydown', (e) => {
-    e.preventDefault()
-    switch (e.key) {
-        case 'w':
-        case 'ArrowUp':
-            map.move.y = 1
-            break
-        case 'a':
-        case 'ArrowLeft':
-            map.move.x = 1
-            break
-        case 's':
-        case 'ArrowDown':
-            map.move.y = -1
-            break
-        case 'd':
-        case 'ArrowRight':
-            map.move.x = -1
-            break
-        default:
-            console.log(e.key)
-    }
-})
-
-window.addEventListener('keyup', (e) => {
-    e.preventDefault()
-
-    switch (e.key) {
-        case 'w':
-        case 'ArrowUp':
-            map.move.y = 0
-            break
-        case 'a':
-        case 'ArrowLeft':
-            map.move.x = 0
-            break
-        case 's':
-        case 'ArrowDown':
-            map.move.y = 0
-            break
-        case 'd':
-        case 'ArrowRight':
-            map.move.x = 0
-            break
-        default:
-            console.log(e.key)
-    }
-})
-
-function collisionMechanics() {
-    for (let i = 0; i < boundaries.length; i++) {
-        const boundary = boundaries[i]
-        if (player.position.x + PlayerSprite.width - map.move.x > boundary.position.x && player.position.x - map.move.x < boundary.position.x + CollisionsMap.width && player.position.y - map.move.y < boundary.position.y + CollisionsMap.height && player.position.y - map.move.y + PlayerSprite.height > boundary.position.y) {
-            console.log('colliding')
-            colliding = true
-            break
-        }
-    }
-}
 
 let colliding
 function movement() {
-    colliding = false
 
-    collisionMechanics()
+    colliding = collisionMechanics(player)
 
     let step = Math.floor(FRAMERATE / FRAMERATELIMIT) % 4
-    if (map.move.x < 0) {
+    if (MOVE.x < 0) {
         player.imageLoader(playerSrcRight)
     }
-    else if (map.move.x > 0) {
+    else if (MOVE.x > 0) {
         player.imageLoader(playerSrcLeft)
     }
-    else if (map.move.y > 0) {
+    else if (MOVE.y > 0) {
         player.imageLoader(playerSrcUp)
     }
-    else if (map.move.y < 0) {
+    else if (MOVE.y < 0) {
         player.imageLoader(playerSrcDown)
     } else {
         step = 0
@@ -158,14 +73,18 @@ function movement() {
     ctx.drawImage(map.image, map.position.x, map.position.y)
     if (!colliding) {
         map.updatePosition()
+        foreGroundMap.updatePosition()
     }
-
+    
     if (!colliding)
-        boundaries.forEach(boundary => {
-            boundary.updatePosition(map.move.x, map.move.y)
-        })
-
-    ctx.drawImage(player.image, step * PlayerSprite.width, 0, PlayerSprite.width, PlayerSprite.height, player.position.x, player.position.y, PlayerSprite.width, PlayerSprite.height)
+    collisionBlocks.forEach(boundary => {
+        boundary.updatePosition(MOVE.x, MOVE.y)
+        // boundary.draw()
+    })
+    
+    ctx.drawImage(player.image, step * player.width, 0, player.width, player.height, player.position.x, player.position.y, player.width, player.height)
+    
+    ctx.drawImage(foreGroundMap.image, foreGroundMap.position.x, foreGroundMap.position.y)
 
     FRAMERATE++
 }
