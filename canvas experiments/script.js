@@ -5,6 +5,7 @@ let requestAnimationFrameRef
 
 let computedLength = 20
 let cellSize = 15
+let animationType = 'line'
 
 window.onload = function () {
     canvas = document.querySelector('canvas')
@@ -26,6 +27,25 @@ window.addEventListener('resize', () => {
 const mouse = {
     x: 0,
     y: 0
+}
+
+let modifier1 = 'cos'
+let modifier2 = 'sin'
+
+function modifier(modifier, angle) {
+    let val
+    switch (modifier) {
+        case 'sin':
+            val = Math.sin(angle)
+            break
+        case 'tan':
+            val = Math.tan(angle)
+            break
+        case 'cos':
+            val = Math.cos(angle)
+            break
+    }
+    return val
 }
 
 window.addEventListener('mousemove', (e) => {
@@ -75,13 +95,17 @@ class FlowFieldEffect {
         const lineLength = computedLength //computedLength > 40 ? 40 : computedLength < 2 ? 2 : computedLength
         this.#ctx.beginPath()
 
-        // animate line
-        this.#ctx.moveTo(_x, _y)
-        this.#ctx.lineTo(_x + Math.cos(angle) * lineLength, _y + Math.sin(angle) * lineLength)
-
-        // animate circle
-        // this.#ctx.arc(_x, _y, 2, 0, 2 * Math.PI)
-        // this.#ctx.arc(_x + Math.cos(angle) * lineLength, _y + Math.sin(angle) * lineLength, 2, 0, 2 * Math.PI)
+        if (animationType === 'line') {
+            // animate line
+            this.#ctx.moveTo(_x, _y)
+            this.#ctx.lineTo(_x + modifier(modifier1, angle) * lineLength, _y + modifier(modifier2, angle) * lineLength)
+            // this.#ctx.lineTo(_x + Math.cos(angle) * lineLength, _y + Math.sin(angle) * lineLength)
+        } else {
+            // animate circle
+            // this.#ctx.arc(_x, _y, 2, 0, 2 * Math.PI)
+            this.#ctx.arc(_x + modifier(modifier1, angle) * lineLength, _y + modifier(modifier2, angle) * lineLength, 2, 0, 2 * Math.PI)
+            // this.#ctx.arc(_x + Math.cos(angle) * lineLength, _y + Math.sin(angle) * lineLength, 2, 0, 2 * Math.PI)
+        }
 
         this.#ctx.stroke()
         this.#ctx.closePath()
@@ -109,7 +133,7 @@ class FlowFieldEffect {
 }
 
 
-
+// range slider
 const range = document.getElementById('range')
 
 range.addEventListener('input', (e) => {
@@ -126,7 +150,7 @@ range2.addEventListener('input', (e) => {
 })
 
 const scale = (num, in_min, in_max, out_min, out_max) => {
-    return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 }
 
 function rangeCalc(e, startVal, endVal) {
@@ -149,4 +173,29 @@ function rangeCalc(e, startVal, endVal) {
     const sValue = startVal + parseInt(value) * (endVal - startVal) * 0.01
     label.innerHTML = sValue.toFixed(1)
     return sValue
+}
+
+// switch
+function switchHandler() {
+    const form = document.querySelector('.switches-container')
+    const formData = new FormData(form)
+
+    const value = formData.get('select')
+    animationType = value
+    cancelAnimationFrame(requestAnimationFrameRef)
+    flowField = new FlowFieldEffect(ctx, canvas.width, canvas.height)
+    flowField.animate(0)
+}
+
+// drop down
+function handleDropdown() {
+    const form = document.querySelector('.dropdown-container')
+    const formData = new FormData(form)
+    const firstValue = formData.get('firstModifier')
+    const secondValue = formData.get('secondModifier')
+    if (firstValue)
+        modifier1 = firstValue
+    if (secondValue)
+        modifier2 = secondValue
+
 }

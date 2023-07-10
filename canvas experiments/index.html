@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="description" content="Explore canvas element" />
+    <meta name="keywords" content="javascript game content open source" />
+    <meta name="author" content="kuldeep kumar" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <link rel="shortcut icon" href="favicon.png" type="image/png">
@@ -17,19 +20,46 @@
             <h2>Donald duck</h2>
         </div>
 
-        <div class="slider-container">
+        <div class="controls">
             <div class="range-container">
                 <input type="range" id="range" min="0" max="100">
                 <label for="range">-</label>
-                <div>Segment length</div>
+                <sub>Segment length</sub>
             </div>
             <div class="range-container">
                 <input type="range" id="range2" min="0" max="100">
                 <label for="range">-</label>
-                <div>Cell Size</div>
+                <sub>Cell Size</sub>
             </div>
+            <form onchange="switchHandler()" class="switches-container">
+                <input type="radio" id="lines" name="select" value="line" />
+                <input type="radio" id="circle" name="select" value="circle" />
+                <label for="lines">Lines</label>
+                <label for="circle">Circles</label>
+                <div class="switch-wrapper">
+                    <div class="switch">
+                        <div>Lines</div>
+                        <div>Circles</div>
+                    </div>
+                </div>
+            </form>
+            <form onchange="handleDropdown()" class="dropdown-container">
+                <select name="firstModifier" class="dropdown">
+                    <option value="">Select a modifier</option>
+                    <option value="cos">Cos</option>
+                    <option value="sin">Sin</option>
+                    <option value="tan">Tan</option>
+                </select>
+                <select name="secondModifier" class="dropdown">
+                    <option value="">Select a modifier</option>
+                    <option value="cos">Cos</option>
+                    <option value="sin">Sin</option>
+                    <option value="tan">Tan</option>
+                </select>
+            </form>
         </div>
     </div>
+    <h2 class="warn">Disabled. Could crash smaller devices!</h2>
     <canvas></canvas>
 </body>
 
