@@ -6,13 +6,13 @@ canvas.height = window.innerHeight
 const fps = 30
 const interval = 1000 / fps
 let lastTime = 0
-
-let particlesArray = []
+let requestAnimationFrameRef
+const particlesArray = []
 
 const mouse = {
     x: null,
     y: null,
-    radius: 150
+    radius: 5000
 }
 
 window.addEventListener('mousemove', (e) => {
@@ -20,11 +20,18 @@ window.addEventListener('mousemove', (e) => {
     mouse.y = e.y
 })
 
+window.addEventListener('resize', () => {
+    cancelAnimationFrame(requestAnimationFrameRef)
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    animate(0)
+})
+
 ctx.fillStyle = 'white'
 ctx.font = '30px Verdana'
-ctx.fillText('A', 0, 40)
+ctx.fillText('A', 0, 30)
 
-const data = ctx.getImageData(0, 0, 100, 100)
+const textCoordinates = ctx.getImageData(0, 0, 100, 100)
 
 class Particle {
     constructor(x, y) {
@@ -33,7 +40,7 @@ class Particle {
         this.size = 3
         this.baseX = this.x
         this.baseY = this.y
-        this.density = (Math.random() * 30) + 1
+        this.density = (Math.random() * 1000) + 50
     }
 
     draw() {
@@ -47,17 +54,33 @@ class Particle {
     update() {
         const dx = mouse.x - this.x
         const dy = mouse.y - this.y
-        const distance = dx * dx + dy * dy
-        if (distance < 25000)
-            this.size = 5
-        else
-            this.size = 3
+        const distance = (dx * dx + dy * dy) * 0.5
+        const forceDistanceX = dx / distance
+        const forceDistanceY = dy / distance
+        const maxDistance = mouse.radius
+        const force = (maxDistance - distance) / maxDistance
+        const distanceX = forceDistanceX * force * this.density
+        const distanceY = forceDistanceY * force * this.density
+        if (distance < mouse.radius) {
+            this.x -= distanceX
+            this.y -= distanceY
+        }
+        else {
+            if (this.x !== this.baseX) {
+                const dx = this.x - this.baseX
+                this.x -= dx / 10
+            }
+            if (this.y !== this.baseY) {
+                const dy = this.y - this.baseY
+                this.y -= dy / 10
+            }
+
+        }
     }
 }
 
 
 function inti() {
-    particlesArray = []
     for (let index = 0; index < 500; index++) {
         const randomX = Math.floor(Math.random() * canvas.width)
         const randomY = Math.floor(Math.random() * canvas.height)
@@ -77,7 +100,7 @@ function animate(timestamp) {
         }
         lastTime = timestamp
     }
-    requestAnimationFrame(animate)
+    requestAnimationFrameRef = requestAnimationFrame(animate)
 }
 
 animate(0)
