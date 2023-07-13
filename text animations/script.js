@@ -8,6 +8,9 @@ const interval = 1000 / fps
 let lastTime = 0
 let requestAnimationFrameRef
 const particlesArray = []
+const zoom = 15
+const adjustPositionX = 2
+const adjustPositionY = -5
 
 const mouse = {
     x: null,
@@ -28,8 +31,8 @@ window.addEventListener('resize', () => {
 })
 
 ctx.fillStyle = 'white'
-ctx.font = '30px Verdana'
-ctx.fillText('A', 0, 30)
+ctx.font = '19px Verdana'
+ctx.fillText('Cat meme', 0, 40)
 
 const textCoordinates = ctx.getImageData(0, 0, 100, 100)
 
@@ -81,10 +84,17 @@ class Particle {
 
 
 function inti() {
-    for (let index = 0; index < 500; index++) {
-        const randomX = Math.floor(Math.random() * canvas.width)
-        const randomY = Math.floor(Math.random() * canvas.height)
-        particlesArray.push(new Particle(randomX, randomY))
+    const y2 = textCoordinates.height
+    const x2 = textCoordinates.width
+    for (let y = 0; y < y2; y++) {
+        for (let x = 0; x < x2; x++) {
+            if (textCoordinates.data[(y * 4 * textCoordinates.width + (x * 4) + 3)] > 128) {
+                const positionX = x + adjustPositionX
+                const positionY = y + adjustPositionY
+                particlesArray.push(new Particle(positionX * zoom, positionY * zoom))
+            }
+        }
+
     }
 }
 
@@ -99,8 +109,31 @@ function animate(timestamp) {
             particlesArray[i].update()
         }
         lastTime = timestamp
+        connect()
     }
     requestAnimationFrameRef = requestAnimationFrame(animate)
 }
 
 animate(0)
+
+function connect() {
+    let opacityValue = 1
+    for (let a = 0; a < particlesArray.length; a++) {
+        for (let b = a; b < particlesArray.length; b++) {
+            const dx = particlesArray[a].x - particlesArray[b].x
+            const dy = particlesArray[a].y - particlesArray[b].y
+            const distance = 0.5 * (dx * dx + dy * dy)
+
+            if (distance < 350) {
+                opacityValue = 0.2
+                ctx.strokeStyle = `rgba(255,255,255,${opacityValue})`
+                ctx.lineWidth = 1
+                ctx.beginPath()
+                ctx.moveTo(particlesArray[a].x, particlesArray[a].y)
+                ctx.lineTo(particlesArray[b].x, particlesArray[b].y)
+                ctx.stroke()
+            }
+        }
+
+    }
+}
