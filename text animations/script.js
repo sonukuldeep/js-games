@@ -10,7 +10,7 @@ let requestAnimationFrameRef
 const particlesArray = []
 const zoom = 15
 const adjustPositionX = 2
-const adjustPositionY = -5
+const adjustPositionY = 15
 
 const mouse = {
     x: null,
@@ -30,12 +30,6 @@ window.addEventListener('resize', () => {
     animate(0)
 })
 
-ctx.fillStyle = 'white'
-ctx.font = '25px Verdana'
-ctx.fillText('Cats', 0, 40)
-
-const textCoordinates = ctx.getImageData(0, 0, 100, 100)
-
 class Particle {
     constructor(x, y) {
         this.x = x;
@@ -45,7 +39,7 @@ class Particle {
         this.baseY = this.y
         this.density = (Math.random() * 1000) + 50
     }
-
+    
     draw() {
         ctx.fillStyle = 'white'
         ctx.beginPath()
@@ -53,7 +47,7 @@ class Particle {
         ctx.closePath()
         ctx.fill()
     }
-
+    
     update() {
         const dx = mouse.x - this.x
         const dy = mouse.y - this.y
@@ -77,7 +71,7 @@ class Particle {
                 const dy = this.y - this.baseY
                 this.y -= dy / 10
             }
-
+            
         }
     }
 }
@@ -94,11 +88,10 @@ function inti() {
                 particlesArray.push(new Particle(positionX * zoom, positionY * zoom))
             }
         }
-
+        
     }
 }
 
-inti()
 
 function animate(timestamp) {
     const elapsedTime = timestamp - lastTime
@@ -114,7 +107,6 @@ function animate(timestamp) {
     requestAnimationFrameRef = requestAnimationFrame(animate)
 }
 
-animate(0)
 
 function connect() {
     let opacityValue = 1
@@ -123,7 +115,7 @@ function connect() {
             const dx = particlesArray[a].x - particlesArray[b].x
             const dy = particlesArray[a].y - particlesArray[b].y
             const distance = 0.5 * (dx * dx + dy * dy)
-
+            
             if (distance < 350) {
                 opacityValue = 0.2
                 ctx.strokeStyle = `rgba(255,255,255,${opacityValue})`
@@ -134,6 +126,15 @@ function connect() {
                 ctx.stroke()
             }
         }
-
+        
     }
 }
+
+ctx.fillStyle = 'white'
+ctx.font = '25px Verdana'
+ctx.fillText('Cats', 0, 20)
+
+const textCoordinates = ctx.getImageData(0, 0, 100, 100)
+
+inti()
+animate(0)
