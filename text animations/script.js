@@ -31,8 +31,8 @@ window.addEventListener('resize', () => {
 })
 
 ctx.fillStyle = 'white'
-ctx.font = '19px Verdana'
-ctx.fillText('Cat meme', 0, 40)
+ctx.font = '25px Verdana'
+ctx.fillText('Cats', 0, 40)
 
 const textCoordinates = ctx.getImageData(0, 0, 100, 100)
 
