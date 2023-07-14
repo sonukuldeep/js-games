@@ -8,14 +8,18 @@ const interval = 1000 / fps
 let lastTime = 0
 let requestAnimationFrameRef
 const particlesArray = []
-const zoom = 20
-const adjustPositionX = 10
+const zoom = 10
+const adjustPositionX = 2
 const adjustPositionY = 5
+const threads = 200
 
 ctx.fillStyle = 'white'
 ctx.font = '20px Verdana'
-ctx.fillText('Cat', 0, 20)
-const textCoordinates = ctx.getImageData(0, 0, 100, 100)
+ctx.fillText('Cat meme', 0, 20)
+const textCoordinates = ctx.getImageData(0, 0, 110, 30)
+ctx.strokeStyle = 'white'
+ctx.rect(0, 0, 110, 30)
+ctx.stroke()
 
 const mouse = {
     x: null,
@@ -46,7 +50,12 @@ class Particle {
     }
 
     draw() {
-        ctx.fillStyle = 'white'
+        const distance = getDistance(this.baseX, this.baseY, this.x, this.y)
+        const red = Math.random() * 255
+        const green = Math.random() * 255
+        const blue = Math.random() * 255
+        const color = `rgba(${(new Uint8ClampedArray([red, green, blue, distance])).join()})`
+        ctx.fillStyle = color
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
         ctx.closePath()
@@ -56,7 +65,7 @@ class Particle {
     update() {
         const dx = mouse.x - this.x
         const dy = mouse.y - this.y
-        const distance = (dx * dx + dy * dy) * 0.5
+        const distance = 0.5 * (dx * dx + dy * dy)
         const forceDistanceX = dx / distance
         const forceDistanceY = dy / distance
         const maxDistance = mouse.radius
@@ -114,12 +123,10 @@ function connect() {
     let opacityValue = 1
     for (let a = 0; a < particlesArray.length; a++) {
         for (let b = a; b < particlesArray.length; b++) {
-            const dx = particlesArray[a].x - particlesArray[b].x
-            const dy = particlesArray[a].y - particlesArray[b].y
-            const distance = 0.5 * (dx * dx + dy * dy)
+            const distance = getDistance(particlesArray[a].x, particlesArray[a].y, particlesArray[b].x, particlesArray[b].y)
 
-            if (distance < 350) {
-                opacityValue = 0.2
+            if (distance < threads) {
+                opacityValue = 0.3
                 ctx.strokeStyle = `rgba(255,255,255,${opacityValue})`
                 ctx.lineWidth = 1
                 ctx.beginPath()
@@ -130,6 +137,26 @@ function connect() {
         }
 
     }
+}
+
+
+
+/**
+ * Description Get distance between two points.
+ * (x1,y1) are co-ordinates of first point
+ * (x2,y2) are co-ordinates of second point
+ *
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @returns {number}
+ */
+function getDistance(x1, y1, x2, y2) {
+    const dx = x1 - x2
+    const dy = y1 - y2
+    const distance = 0.5 * (dx * dx + dy * dy)
+    return distance
 }
 
 
