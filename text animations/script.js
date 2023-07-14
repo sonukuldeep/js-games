@@ -8,9 +8,14 @@ const interval = 1000 / fps
 let lastTime = 0
 let requestAnimationFrameRef
 const particlesArray = []
-const zoom = 15
-const adjustPositionX = 2
-const adjustPositionY = 15
+const zoom = 20
+const adjustPositionX = 10
+const adjustPositionY = 5
+
+ctx.fillStyle = 'white'
+ctx.font = '20px Verdana'
+ctx.fillText('Cat', 0, 20)
+const textCoordinates = ctx.getImageData(0, 0, 100, 100)
 
 const mouse = {
     x: null,
@@ -39,7 +44,7 @@ class Particle {
         this.baseY = this.y
         this.density = (Math.random() * 1000) + 50
     }
-    
+
     draw() {
         ctx.fillStyle = 'white'
         ctx.beginPath()
@@ -47,7 +52,7 @@ class Particle {
         ctx.closePath()
         ctx.fill()
     }
-    
+
     update() {
         const dx = mouse.x - this.x
         const dy = mouse.y - this.y
@@ -71,27 +76,24 @@ class Particle {
                 const dy = this.y - this.baseY
                 this.y -= dy / 10
             }
-            
+
         }
     }
 }
 
-
-function inti() {
-    const y2 = textCoordinates.height
-    const x2 = textCoordinates.width
-    for (let y = 0; y < y2; y++) {
-        for (let x = 0; x < x2; x++) {
-            if (textCoordinates.data[(y * 4 * textCoordinates.width + (x * 4) + 3)] > 128) {
-                const positionX = x + adjustPositionX
-                const positionY = y + adjustPositionY
+function init() {
+    let count = 3 // since every forth value in array is alpha channel
+    for (let i = 0; i < textCoordinates.height; i++) {
+        for (let j = 0; j < textCoordinates.width; j++) {
+            if (textCoordinates.data[count] > 100) {
+                const positionX = j + adjustPositionX
+                const positionY = i + adjustPositionY
                 particlesArray.push(new Particle(positionX * zoom, positionY * zoom))
             }
+            count += 4
         }
-        
     }
 }
-
 
 function animate(timestamp) {
     const elapsedTime = timestamp - lastTime
@@ -115,7 +117,7 @@ function connect() {
             const dx = particlesArray[a].x - particlesArray[b].x
             const dy = particlesArray[a].y - particlesArray[b].y
             const distance = 0.5 * (dx * dx + dy * dy)
-            
+
             if (distance < 350) {
                 opacityValue = 0.2
                 ctx.strokeStyle = `rgba(255,255,255,${opacityValue})`
@@ -126,15 +128,12 @@ function connect() {
                 ctx.stroke()
             }
         }
-        
+
     }
 }
 
-ctx.fillStyle = 'white'
-ctx.font = '25px Verdana'
-ctx.fillText('Cats', 0, 20)
 
-const textCoordinates = ctx.getImageData(0, 0, 100, 100)
+init()
 
-inti()
 animate(0)
+
