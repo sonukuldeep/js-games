@@ -8,14 +8,18 @@ const interval = 1000 / fps
 let lastTime = 0
 let requestAnimationFrameRef
 const particlesArray = []
-const zoom = 20
-const adjustPositionX = 10
+const zoom = 10
+const adjustPositionX = 2
 const adjustPositionY = 5
+const threads = 200
 
 ctx.fillStyle = 'white'
 ctx.font = '20px Verdana'
 ctx.fillText('Cat', 0, 20)
-const textCoordinates = ctx.getImageData(0, 0, 100, 100)
+const textCoordinates = ctx.getImageData(0, 0, 50, 25)
+
+ctx.strokeStyle = 'white'
+ctx.strokeRect(0, 0, 50, 25)
 
 const mouse = {
     x: null,
@@ -37,7 +41,7 @@ window.addEventListener('resize', () => {
 
 class Particle {
     constructor(x, y) {
-        this.x = x;
+        this.x = x
         this.y = y
         this.size = 3
         this.baseX = this.x
@@ -56,7 +60,7 @@ class Particle {
     update() {
         const dx = mouse.x - this.x
         const dy = mouse.y - this.y
-        const distance = (dx * dx + dy * dy) * 0.5
+        const distance = 0.5 * (dx * dx + dy * dy)
         const forceDistanceX = dx / distance
         const forceDistanceY = dy / distance
         const maxDistance = mouse.radius
@@ -70,11 +74,11 @@ class Particle {
         else {
             if (this.x !== this.baseX) {
                 const dx = this.x - this.baseX
-                this.x -= dx / 10
+                this.x -= dx * 0.1
             }
             if (this.y !== this.baseY) {
                 const dy = this.y - this.baseY
-                this.y -= dy / 10
+                this.y -= dy * 0.1
             }
 
         }
@@ -114,12 +118,12 @@ function connect() {
     let opacityValue = 1
     for (let a = 0; a < particlesArray.length; a++) {
         for (let b = a; b < particlesArray.length; b++) {
-            const dx = particlesArray[a].x - particlesArray[b].x
-            const dy = particlesArray[a].y - particlesArray[b].y
-            const distance = 0.5 * (dx * dx + dy * dy)
+            dx = particlesArray[a].x - particlesArray[b].x
+            dy = particlesArray[a].y - particlesArray[b].y
+            const distance = (dx * dx + dy * dy) * 0.5
 
-            if (distance < 350) {
-                opacityValue = 0.2
+            if (distance < threads) {
+                opacityValue = 0.3
                 ctx.strokeStyle = `rgba(255,255,255,${opacityValue})`
                 ctx.lineWidth = 1
                 ctx.beginPath()
