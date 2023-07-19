@@ -17,7 +17,7 @@ var requestAnimationFrameRef = 0;
 var mouse = {
     x: -1,
     y: -1,
-    radius: 100
+    radius: 120
 };
 window.addEventListener('resize', function () {
     cancelAnimationFrame(requestAnimationFrameRef);
@@ -41,13 +41,15 @@ var Particle = /** @class */ (function () {
         this.radius = Math.floor(5 + Math.random() * 10);
         this.x = this.radius + Math.random() * (this.effect.width - this.radius * 2);
         this.y = this.radius + Math.random() * (this.effect.height - this.radius * 2);
-        this.vx = ((Math.random() * 20) - 10) / this.radius;
+        this.vx = ((Math.random() * 20) - 25) / this.radius;
         this.vy = ((Math.random() * 20) - 10) / this.radius;
-        this.force = 60 / (this.radius * this.radius);
+        this.force = 60 / (this.radius);
         this.pushX = 0;
         this.pushY = 0;
         this.friction = 0.98;
         this.fillColorFactor = 360 / canvas.width;
+        this.whale = new Whale(effect.canvas);
+        this.count = 0;
     }
     Particle.prototype.draw = function (context) {
         context.fillStyle = "hsl(".concat(this.x * this.fillColorFactor, ", 100%, 50%)");
@@ -55,23 +57,27 @@ var Particle = /** @class */ (function () {
         context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         context.fill();
     };
-    Particle.prototype.update = function () {
-        if (mouse.x != -1 && mouse.y != -1) {
-            var dx = this.x - mouse.x;
-            var dy = this.y - mouse.y;
-            var distance = Math.hypot(dx, dy);
-            if (distance < mouse.radius) {
-                var angle = Math.atan2(dy, dx);
-                this.pushX += Math.cos(angle) * this.force;
-                this.pushY += Math.sin(angle) * this.force;
-            }
+    Particle.prototype.update = function (context, x, y) {
+        var dx = this.x - x;
+        var dy = this.y - y;
+        // context.beginPath()
+        // context.arc(x, y, 120, 0, Math.PI * 2)
+        // context.stroke()
+        var distance = Math.hypot(dx, dy);
+        if (distance < 120) {
+            var angle = Math.atan2(dy, dx);
+            this.pushX += Math.cos(angle) * this.force;
+            this.pushY += Math.sin(angle) * this.force;
         }
         this.x += this.vx + this.pushX;
-        this.y += this.vy + this.pushY;
-        if ((this.x + this.radius) > this.effect.width || (this.x - this.radius) < 0) {
-            this.x = this.x;
-            this.vx *= -1;
-            this.pushX *= -1;
+        // this.y += this.vy + this.pushY
+        // if ((this.x + this.radius) > this.effect.width || (this.x - this.radius) < 0) {
+        //     this.x = this.x
+        //     this.vx *= -1
+        //     this.pushX *= -1
+        // }
+        if (this.x < -30) {
+            this.x = this.effect.width + 30;
         }
         if ((this.y + this.radius) > this.effect.height || (this.y - this.radius) < 0) {
             this.y = this.y;
@@ -80,8 +86,6 @@ var Particle = /** @class */ (function () {
         }
         this.pushX *= this.friction;
         this.pushY *= this.friction;
-    };
-    Particle.prototype.handleMouseMove = function () {
     };
     return Particle;
 }());
@@ -93,6 +97,7 @@ var Effect = /** @class */ (function () {
         this.particles = [];
         this.numberOfParticles = 200;
         this.createParticle();
+        this.whale = new Whale(canvas);
     }
     Effect.prototype.createParticle = function () {
         for (var index = 0; index < this.numberOfParticles; index++) {
@@ -100,11 +105,15 @@ var Effect = /** @class */ (function () {
         }
     };
     Effect.prototype.handleParticles = function (context) {
+        var _this = this;
+        // this.connectParticles(context)
         this.particles.forEach(function (particle) {
             particle.draw(context);
-            particle.update();
+            var x = _this.whale.x + 80;
+            var y = _this.whale.y + 80 * Math.sin(_this.whale.angle);
+            particle.update(context, x, y);
         });
-        // this.connectParticles(context)
+        this.whale.draw(context);
     };
     Effect.prototype.connectParticles = function (context) {
         var maxDistance = 100;
@@ -127,6 +136,33 @@ var Effect = /** @class */ (function () {
         }
     };
     return Effect;
+}());
+var Whale = /** @class */ (function () {
+    function Whale(canvas) {
+        this.canvas = canvas;
+        this.image = document.querySelector('#whale');
+        this.width = 420;
+        this.height = 285;
+        this.x = this.canvas.width * 0.2;
+        this.y = this.canvas.height * 0.5;
+        this.frame = 0;
+        this.maxFrame = 38;
+        this.angle = 0;
+    }
+    Whale.prototype.draw = function (context) {
+        context.save();
+        context.translate(this.x, this.y);
+        context.rotate(Math.sin(this.angle));
+        context.drawImage(this.image, this.frame * this.width, 0, this.width, this.height, -this.width / 2, -this.height / 2, this.width, this.height);
+        // context.beginPath()
+        // context.arc(this.width / 2 - 100, 0, 120, 0, Math.PI * 2)
+        // context.stroke()
+        context.restore();
+        this.y += Math.sin(this.angle);
+        this.frame < this.maxFrame ? this.frame++ : this.frame = 0;
+        this.angle < (Math.PI * 2) ? this.angle += 0.01 : this.angle = 0.01;
+    };
+    return Whale;
 }());
 var effect = new Effect(canvas);
 function animation(timestamp) {

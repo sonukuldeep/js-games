@@ -18,7 +18,7 @@ let requestAnimationFrameRef = 0
 const mouse = {
     x: -1,
     y: -1,
-    radius: 100
+    radius: 120
 }
 
 window.addEventListener('resize', () => {
@@ -52,19 +52,23 @@ class Particle {
     pushY: number;
     friction: number;
     fillColorFactor: number;
+    whale: Whale;
+    count: number;
 
     constructor(effect: Effect) {
         this.effect = effect
         this.radius = Math.floor(5 + Math.random() * 10)
         this.x = this.radius + Math.random() * (this.effect.width - this.radius * 2)
         this.y = this.radius + Math.random() * (this.effect.height - this.radius * 2)
-        this.vx = ((Math.random() * 20) - 10) / this.radius
+        this.vx = ((Math.random() * 20) - 25) / this.radius
         this.vy = ((Math.random() * 20) - 10) / this.radius
-        this.force = 60 / (this.radius * this.radius)
+        this.force = 60 / (this.radius)
         this.pushX = 0
         this.pushY = 0
         this.friction = 0.98
         this.fillColorFactor = 360 / canvas.width
+        this.whale = new Whale(effect.canvas)
+        this.count = 0
     }
 
     draw(context: CanvasRenderingContext2D) {
@@ -72,26 +76,35 @@ class Particle {
         context.beginPath()
         context.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
         context.fill()
+
     }
-    update() {
-        if (mouse.x != -1 && mouse.y != -1) {
-            const dx = this.x - mouse.x
-            const dy = this.y - mouse.y
-            const distance = Math.hypot(dx, dy)
-            if (distance < mouse.radius) {
-                const angle = Math.atan2(dy, dx)
-                this.pushX += Math.cos(angle) * this.force
-                this.pushY += Math.sin(angle) * this.force
-            }
+    update(context: CanvasRenderingContext2D, x: number, y: number) {
+        const dx = this.x - x
+        const dy = this.y - y
+
+        // context.beginPath()
+        // context.arc(x, y, 120, 0, Math.PI * 2)
+        // context.stroke()
+
+
+        const distance = Math.hypot(dx, dy)
+        if (distance < 120) {
+            const angle = Math.atan2(dy, dx)
+            this.pushX += Math.cos(angle) * this.force
+            this.pushY += Math.sin(angle) * this.force
         }
 
         this.x += this.vx + this.pushX
-        this.y += this.vy + this.pushY
+        // this.y += this.vy + this.pushY
 
-        if ((this.x + this.radius) > this.effect.width || (this.x - this.radius) < 0) {
-            this.x = this.x
-            this.vx *= -1
-            this.pushX *= -1
+        // if ((this.x + this.radius) > this.effect.width || (this.x - this.radius) < 0) {
+        //     this.x = this.x
+        //     this.vx *= -1
+        //     this.pushX *= -1
+        // }
+
+        if(this.x < -30) {
+            this.x = this.effect.width + 30
         }
         if ((this.y + this.radius) > this.effect.height || (this.y - this.radius) < 0) {
             this.y = this.y
@@ -102,9 +115,6 @@ class Particle {
         this.pushX *= this.friction
         this.pushY *= this.friction
     }
-    handleMouseMove() {
-
-    }
 }
 
 class Effect {
@@ -113,6 +123,7 @@ class Effect {
     height: number;
     particles: Particle[];
     numberOfParticles: number;
+    whale: Whale;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -121,6 +132,7 @@ class Effect {
         this.particles = []
         this.numberOfParticles = 200
         this.createParticle()
+        this.whale = new Whale(canvas)
     }
 
     createParticle() {
@@ -130,11 +142,14 @@ class Effect {
         }
     }
     handleParticles(context: CanvasRenderingContext2D) {
+        // this.connectParticles(context)
         this.particles.forEach(particle => {
             particle.draw(context)
-            particle.update()
+            const x = this.whale.x + 80
+            const y = this.whale.y + 80 * Math.sin(this.whale.angle)
+            particle.update(context, x, y)
         })
-        // this.connectParticles(context)
+        this.whale.draw(context)
     }
     connectParticles(context: CanvasRenderingContext2D) {
         const maxDistance = 100
@@ -156,6 +171,45 @@ class Effect {
             }
 
         }
+    }
+}
+
+class Whale {
+    canvas: HTMLCanvasElement;
+    image: HTMLImageElement;
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    frame: number;
+    maxFrame: number;
+    angle: number;
+
+
+    constructor(canvas: HTMLCanvasElement) {
+        this.canvas = canvas
+        this.image = document.querySelector('#whale')!
+        this.width = 420
+        this.height = 285
+        this.x = this.canvas.width * 0.2
+        this.y = this.canvas.height * 0.5
+        this.frame = 0
+        this.maxFrame = 38
+        this.angle = 0
+ 
+    }
+    draw(context: CanvasRenderingContext2D) {
+        context.save()
+        context.translate(this.x, this.y)
+        context.rotate(Math.sin(this.angle))
+        context.drawImage(this.image, this.frame * this.width, 0, this.width, this.height, -this.width / 2, -this.height / 2, this.width, this.height)
+        // context.beginPath()
+        // context.arc(this.width / 2 - 100, 0, 120, 0, Math.PI * 2)
+        // context.stroke()
+        context.restore()
+        this.y += Math.sin(this.angle)
+        this.frame < this.maxFrame ? this.frame++ : this.frame = 0
+        this.angle < (Math.PI * 2) ? this.angle += 0.01 : this.angle = 0.01
     }
 }
 
