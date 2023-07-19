@@ -49,16 +49,18 @@ class Particle {
     vy: number;
     friction: number;
     fillColorFactor: number;
+    doubleBounce: boolean;
 
     constructor(effect: Effect) {
         this.effect = effect
         this.radius = Math.floor(5 + Math.random() * 10)
         this.x = this.radius + Math.random() * (this.effect.width - this.radius * 2)
         this.y = this.radius + Math.random() * (this.effect.height - this.radius * 2)
-        this.vx = ((Math.random() * 20) - 10) / this.radius
-        this.vy = ((Math.random() * 20) - 10) / this.radius
+        this.vx = ((Math.random() * 5) - 2)
+        this.vy = ((Math.random() * 5) - 2)
         this.friction = 0.98
         this.fillColorFactor = 360 / canvas.width
+        this.doubleBounce = false
     }
 
     draw(context: CanvasRenderingContext2D) {
@@ -69,11 +71,14 @@ class Particle {
     }
     update(platform: Platform) {
 
-        if (this.x + this.radius > platform.x && this.x - this.radius < platform.x + platform.width) {
-            if (platform.y < this.y + this.radius) 
-                this.vy *= -1   
+        if (!this.doubleBounce && this.x + this.radius > platform.x && this.x - this.radius < platform.x + platform.width && platform.y < this.y + this.radius) {
+            this.vy *= -1
+            if (platform.y < this.y && platform.y + platform.height > this.y) {
+                console.log('fire')
+                this.vx *= -1
+            }
+            this.doubleBounce = true
         }
-
 
         this.x += this.vx
         this.y += this.vy
@@ -81,10 +86,14 @@ class Particle {
         if ((this.x + this.radius) > this.effect.width || (this.x - this.radius) < 0) {
             this.x = this.x
             this.vx *= -1
+            this.doubleBounce = false
+
         }
         if ((this.y + this.radius) > this.effect.height || (this.y - this.radius) < 0) {
             this.y = this.y
             this.vy *= -1
+            this.doubleBounce = false
+
         }
 
     }
@@ -106,7 +115,7 @@ class Effect {
         this.width = this.canvas.width
         this.height = this.canvas.height
         this.particles = []
-        this.numberOfParticles = 50
+        this.numberOfParticles = 2
         this.createParticle()
         this.platform = new Platform(this.canvas, 80, 10, 1, 1, 'hsl(215,100%,50%)')
     }
