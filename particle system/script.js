@@ -78,7 +78,7 @@ class Effect {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         this.particles = [];
-        this.numberOfParticles = 2;
+        this.numberOfParticles = 1;
         this.createParticle();
         this.platform = new Platform(this.canvas, 80, 10, 1, 1, 'hsl(215,100%,50%)');
     }
@@ -132,7 +132,6 @@ class Platform {
         this.x -= 10 * Move.x;
         context.fillStyle = this.color;
         context.fillRect(this.x, this.y, this.width, this.height);
-        context.fill();
     }
 }
 let effect = new Effect(canvas);

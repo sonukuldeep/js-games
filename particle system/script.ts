@@ -115,7 +115,7 @@ class Effect {
         this.width = this.canvas.width
         this.height = this.canvas.height
         this.particles = []
-        this.numberOfParticles = 2
+        this.numberOfParticles = 1
         this.createParticle()
         this.platform = new Platform(this.canvas, 80, 10, 1, 1, 'hsl(215,100%,50%)')
     }
@@ -123,7 +123,6 @@ class Effect {
     createParticle() {
         for (let index = 0; index < this.numberOfParticles; index++) {
             this.particles.push(new Particle(this))
-
         }
     }
     handleParticles(context: CanvasRenderingContext2D) {
@@ -131,8 +130,8 @@ class Effect {
             particle.draw(context)
             particle.update(this.platform)
         })
-        // this.connectParticles(context)
         this.platform.draw(context)
+        // this.connectParticles(context)
     }
     connectParticles(context: CanvasRenderingContext2D) {
         const maxDistance = 100
@@ -188,7 +187,6 @@ class Platform {
         this.x -= 10 * Move.x
         context.fillStyle = this.color
         context.fillRect(this.x, this.y, this.width, this.height)
-        context.fill()
     }
 }
 
