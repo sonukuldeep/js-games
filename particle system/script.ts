@@ -10,7 +10,7 @@ canvas.height = document.documentElement.clientHeight
 // gradient.addColorStop(1, 'violet')
 // ctx.fillStyle = gradient
 ctx.strokeStyle = 'white'
-const fps = 30; // Frames per second
+const fps = 60; // Frames per second
 const interval = 1000 / fps; // Interval between frames in milliseconds
 let lastTime = 0;
 let requestAnimationFrameRef = 0
@@ -47,9 +47,6 @@ class Particle {
     effect: Effect;
     vx: number;
     vy: number;
-    force: number;
-    pushX: number;
-    pushY: number;
     friction: number;
     fillColorFactor: number;
 
@@ -60,9 +57,6 @@ class Particle {
         this.y = this.radius + Math.random() * (this.effect.height - this.radius * 2)
         this.vx = ((Math.random() * 20) - 10) / this.radius
         this.vy = ((Math.random() * 20) - 10) / this.radius
-        this.force = 60 / (this.radius * this.radius)
-        this.pushX = 0
-        this.pushY = 0
         this.friction = 0.98
         this.fillColorFactor = 360 / canvas.width
     }
@@ -73,34 +67,26 @@ class Particle {
         context.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
         context.fill()
     }
-    update() {
-        if (mouse.x != -1 && mouse.y != -1) {
-            const dx = this.x - mouse.x
-            const dy = this.y - mouse.y
-            const distance = Math.hypot(dx, dy)
-            if (distance < mouse.radius) {
-                const angle = Math.atan2(dy, dx)
-                this.pushX += Math.cos(angle) * this.force
-                this.pushY += Math.sin(angle) * this.force
-            }
+    update(platform: Platform) {
+
+        if (this.x + this.radius > platform.x && this.x - this.radius < platform.x + platform.width) {
+            if (platform.y < this.y + this.radius) 
+                this.vy *= -1   
         }
 
-        this.x += this.vx + this.pushX
-        this.y += this.vy + this.pushY
+
+        this.x += this.vx
+        this.y += this.vy
 
         if ((this.x + this.radius) > this.effect.width || (this.x - this.radius) < 0) {
             this.x = this.x
             this.vx *= -1
-            this.pushX *= -1
         }
         if ((this.y + this.radius) > this.effect.height || (this.y - this.radius) < 0) {
             this.y = this.y
             this.vy *= -1
-            this.pushY *= -1
         }
 
-        this.pushX *= this.friction
-        this.pushY *= this.friction
     }
     handleMouseMove() {
 
@@ -113,14 +99,16 @@ class Effect {
     height: number;
     particles: Particle[];
     numberOfParticles: number;
+    platform: Platform;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas
         this.width = this.canvas.width
         this.height = this.canvas.height
         this.particles = []
-        this.numberOfParticles = 200
+        this.numberOfParticles = 50
         this.createParticle()
+        this.platform = new Platform(this.canvas, 80, 10, 1, 1, 'hsl(215,100%,50%)')
     }
 
     createParticle() {
@@ -132,15 +120,18 @@ class Effect {
     handleParticles(context: CanvasRenderingContext2D) {
         this.particles.forEach(particle => {
             particle.draw(context)
-            particle.update()
+            particle.update(this.platform)
         })
         // this.connectParticles(context)
+        this.platform.draw(context)
     }
     connectParticles(context: CanvasRenderingContext2D) {
         const maxDistance = 100
         for (let a = 0; a < this.particles.length; a++) {
             for (let b = a; b < this.particles.length; b++) {
+                // @ts-ignore
                 const dx = this.particles[a].x - this.particles[b].x
+                // @ts-ignore
                 const dy = this.particles[a].y - this.particles[b].y
                 const distance = Math.hypot(dx, dy)
                 if (distance < maxDistance) {
@@ -148,20 +139,53 @@ class Effect {
                     const opacity = 1 - distance / maxDistance
                     context.globalAlpha = opacity
                     context.beginPath()
+                    // @ts-ignore
                     context.moveTo(this.particles[a].x, this.particles[a].y)
+                    // @ts-ignore
                     context.lineTo(this.particles[b].x, this.particles[b].y)
                     context.stroke()
                     context.restore()
                 }
             }
-
         }
+    }
+}
+
+class Platform {
+    canvas: HTMLCanvasElement;
+    canvasWidth: number;
+    canvasHeight: number;
+    height: number;
+    width: number;
+    x: number;
+    y: number;
+    bounceFactor: number;
+    color: string;
+    shake: number;
+
+    constructor(canvas: HTMLCanvasElement, width: number, x: number, bounce: number, shake: number, color: string) {
+        this.canvas = canvas
+        this.canvasWidth = canvas.width
+        this.canvasHeight = canvas.height
+        this.height = 20
+        this.width = width
+        this.x = x
+        this.y = this.canvasHeight - this.height - 10
+        this.bounceFactor = bounce
+        this.color = color
+        this.shake = shake
+    }
+    draw(context: CanvasRenderingContext2D) {
+        this.x -= 10 * Move.x
+        context.fillStyle = this.color
+        context.fillRect(this.x, this.y, this.width, this.height)
+        context.fill()
     }
 }
 
 let effect = new Effect(canvas)
 
-function animation(timestamp) {
+function animation(timestamp: number) {
     // Calculate the time difference since the last frame
     var elapsedTime = timestamp - lastTime;
 
