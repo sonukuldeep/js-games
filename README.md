@@ -1,6 +1,8 @@
 
 # A repo of javascript games
 
+![repo](https://www.google.com/url?q=https://media.geeksforgeeks.org/wp-content/cdn-uploads/20211113212436/7-Interesting-Game-Projects-To-Enhance-Your-JavaScript-Skills.png&opi=89978449&sa=U&ved=0ahUKEwjDkdD08PCBAxXVqVYBHXW3DwoQ5hMIBQ&usg=AOvVaw3WlOhE3l3hoNm4QQV_sh6K)
+
 These games was created using vanilla javascipt.
 
 Each folder is a separate game that can be downloaded and run independently
